@@ -18,6 +18,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import java.lang.reflect.Field;
+
 public class MainActivity extends AppCompatActivity {
 
     private WebView mWebView;
@@ -157,6 +159,20 @@ public class MainActivity extends AppCompatActivity {
         startActivity(new Intent(this, WithPhotoWebActivity.class));
     }
 
+    /**
+     * js调用android的方法
+     */
+    class JsInteration {
+        @JavascriptInterface
+        public void toastMessage(String message) {
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+        }
+
+        @JavascriptInterface
+        public void onSumResult(int result) {
+            Toast.makeText(getApplicationContext(), "我是android调用js方法(4.4前)，入参是1和2，js返回结果是" + result, Toast.LENGTH_LONG).show();
+        }
+    }
 
     /**
      * 网页回退
@@ -174,19 +190,57 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    /**
-     * js调用android的方法
-     */
-    class JsInteration {
-        @JavascriptInterface
-        public void toastMessage(String message) {
-            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+    @Override
+    protected void onDestroy() {
+        if(mWebView!=null) {
+            mWebView.setVisibility(View.GONE);
+            mWebView.removeAllViews();
+            mWebView.destroy();
+            releaseAllWebViewCallback();
         }
-
-        @JavascriptInterface
-        public void onSumResult(int result) {
-            Toast.makeText(getApplicationContext(), "我是android调用js方法(4.4前)，入参是1和2，js返回结果是" + result, Toast.LENGTH_LONG).show();
-        }
+        super.onDestroy();
     }
 
+    /**
+     * 防止内存泄露
+     */
+    public void releaseAllWebViewCallback() {
+        if (android.os.Build.VERSION.SDK_INT < 16) {
+            try {
+                Field field = WebView.class.getDeclaredField("mWebViewCore");
+                field = field.getType().getDeclaredField("mBrowserFrame");
+                field = field.getType().getDeclaredField("sConfigCallback");
+                field.setAccessible(true);
+                field.set(null, null);
+            } catch (NoSuchFieldException e) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            } catch (IllegalAccessException e) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            try {
+                Field sConfigCallback = Class.forName("android.webkit.BrowserFrame").getDeclaredField("sConfigCallback");
+                if (sConfigCallback != null) {
+                    sConfigCallback.setAccessible(true);
+                    sConfigCallback.set(null, null);
+                }
+            } catch (NoSuchFieldException e) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            } catch (ClassNotFoundException e) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            } catch (IllegalAccessException e) {
+                if (BuildConfig.DEBUG) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }

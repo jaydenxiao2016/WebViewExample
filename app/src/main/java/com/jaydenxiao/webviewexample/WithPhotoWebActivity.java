@@ -18,7 +18,7 @@ import android.widget.Toast;
  * on 2016.08.17:45
  */
 public class WithPhotoWebActivity extends AppCompatActivity {
-    private WebView webView;
+    private WebView mWebView;
     private ProgressBar pg;
     private String mShareUrl;
 
@@ -32,19 +32,19 @@ public class WithPhotoWebActivity extends AppCompatActivity {
     private void initView() {
         pg= (ProgressBar) findViewById(R.id.pg);
         pg.setVisibility(View.VISIBLE);
-        webView = (WebView) findViewById(R.id.wb);
+        mWebView = (WebView) findViewById(R.id.wb);
         // 启用javascript
-        webView.getSettings().setJavaScriptEnabled(true);
+        mWebView.getSettings().setJavaScriptEnabled(true);
         // 找了个带图片的网站
-        webView.loadUrl("http://m.3gbizhi.com/");
+        mWebView.loadUrl("http://m.3gbizhi.com/");
         // 添加js交互接口类，并起别名 imagelistner
-        webView.addJavascriptInterface(this, "imagelistner");
-        webView.setWebViewClient(new MyWebViewClient());
+        mWebView.addJavascriptInterface(this, "imagelistner");
+        mWebView.setWebViewClient(new MyWebViewClient());
         //长按获取图片链接
-        webView.setOnLongClickListener(new View.OnLongClickListener() {
+        mWebView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                WebView.HitTestResult result=webView.getHitTestResult();
+                WebView.HitTestResult result= mWebView.getHitTestResult();
                 if (result != null) {
                     int type = result.getType();
                     if (type == WebView.HitTestResult.IMAGE_TYPE || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
@@ -68,7 +68,7 @@ public class WithPhotoWebActivity extends AppCompatActivity {
     // 注入js函数监听
     private void addImageClickListner() {
         // 这段js函数的功能就是，遍历所有的img几点，并添加onclick函数，在还是执行的时候调用本地接口传递url过去
-        webView.loadUrl("javascript:(function(){" +
+        mWebView.loadUrl("javascript:(function(){" +
                 "var objs = document.getElementsByTagName(\"img\"); " +
                 "for(var i=0;i<objs.length;i++)  " +
                 "{"
@@ -124,11 +124,21 @@ public class WithPhotoWebActivity extends AppCompatActivity {
      */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack();// 返回前一个页面
+        if (keyCode == KeyEvent.KEYCODE_BACK && mWebView.canGoBack()) {
+            mWebView.goBack();// 返回前一个页面
             return true;
         }
         return super.onKeyDown(keyCode, event);
     }
+    @Override
+    protected void onDestroy() {
+        if(mWebView !=null) {
+            mWebView.setVisibility(View.GONE);
+            mWebView.removeAllViews();
+            mWebView.destroy();
+        }
+        super.onDestroy();
+    }
+
 
 }
